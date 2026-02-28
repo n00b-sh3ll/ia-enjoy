@@ -8,12 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.4.2",
-    "@prisma/client": "^7.4.2",
     "better-sqlite3": "^12.6.2",
     "clsx": "1.2.1",
     "next": "13.4.10",
-    "prisma": "^7.4.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "recharts": "^3.7.0"

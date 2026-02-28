@@ -80,6 +80,12 @@ async function fetchAlertsViaSSH(request: Request) {
 
   const sshUser = process.env.SSH_USER || 'usuario'
   const sshHost = process.env.SSH_HOST || '192.168.150.210'
+  const esUser = process.env.WAZUH_ES_USER
+  const esPassword = process.env.WAZUH_ES_PASSWORD
+
+  if (!esUser || !esPassword) {
+    throw new Error('Missing WAZUH_ES_USER or WAZUH_ES_PASSWORD environment variables')
+  }
   
   // Construir filtro de level dinamicamente
   let levelFilter = '{"range":{"rule.level":{"gte":5}}}'
@@ -94,7 +100,7 @@ import requests,json
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 try:
-    r=requests.post("https://localhost:9200/wazuh-alerts-*/_search",auth=("admin","SmiPV2J7d8L?j26RfkLkRDC?Sa.7JZB8"),json={"query":{"bool":{"filter":[${levelFilter}]}},"size":${limit},"from":${offset},"sort":[{"@timestamp":{"order":"desc"}}]},verify=False,timeout=30)
+    r=requests.post("https://localhost:9200/wazuh-alerts-*/_search",auth=("${esUser}","${esPassword}"),json={"query":{"bool":{"filter":[${levelFilter}]}},"size":${limit},"from":${offset},"sort":[{"@timestamp":{"order":"desc"}}]},verify=False,timeout=30)
     result=r.json()
     print(json.dumps({"hits":{"hits":result.get("hits",{}).get("hits",[]),"total":result.get("hits",{}).get("total",{})}}))
 except Exception as e:

@@ -5,9 +5,14 @@
 set -e
 
 ES_HOST="localhost:9200"
-ES_USER="admin"
-ES_PASS="SmiPV2J7d8L?j26RfkLkRDC?Sa.7JZB8"
+ES_USER="${ELASTICSEARCH_USERNAME:-}"
+ES_PASS="${ELASTICSEARCH_PASSWORD:-}"
 INDEX="wazuh-alerts-*"
+
+if [[ -z "$ES_USER" || -z "$ES_PASS" ]]; then
+  echo "Missing ELASTICSEARCH_USERNAME or ELASTICSEARCH_PASSWORD" >&2
+  exit 1
+fi
 
 # Parse parameters
 LIMIT=${1:-50}

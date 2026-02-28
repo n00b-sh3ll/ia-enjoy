@@ -104,8 +104,12 @@ export async function fetchAlerts(query = '') {
   // Busca do Elasticsearch com filtro de nível >= 5
   const envIndex = process.env.WAZUH_ALERTS_PATH || 'wazuh-alerts-*'
   const esBase = process.env.ELASTICSEARCH_URL || 'https://192.168.150.210:9200'
-  const esUser = process.env.ELASTICSEARCH_USERNAME || 'admin'
-  const esPass = process.env.ELASTICSEARCH_PASSWORD || 'SmiPV2J7d8L?j26RfkLkRDC?Sa.7JZB8'
+  const esUser = process.env.ELASTICSEARCH_USERNAME
+  const esPass = process.env.ELASTICSEARCH_PASSWORD
+
+  if (!esUser || !esPass) {
+    throw new Error('ELASTICSEARCH_USERNAME/ELASTICSEARCH_PASSWORD não configurados')
+  }
 
   // Parse paginação
   const params = new URLSearchParams(query?.replace(/^\?/, ''))

@@ -6,13 +6,21 @@ Executes on the remote Wazuh server to avoid network barriers
 import requests
 import json
 import sys
+import os
 from urllib3.exceptions import InsecureRequestWarning
 
 # Disable SSL warnings for self-signed certificates
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 url = "https://localhost:9200/wazuh-alerts-*/_search"
-auth = ('admin', 'SmiPV2J7d8L?j26RfkLkRDC?Sa.7JZB8')
+es_user = os.getenv("ELASTICSEARCH_USERNAME")
+es_pass = os.getenv("ELASTICSEARCH_PASSWORD")
+
+if not es_user or not es_pass:
+    print(json.dumps({"error": "Missing ELASTICSEARCH_USERNAME or ELASTICSEARCH_PASSWORD"}), file=sys.stderr)
+    sys.exit(1)
+
+auth = (es_user, es_pass)
 
 # Parse limit and offset from command line arguments
 limit = int(sys.argv[1]) if len(sys.argv) > 1 else 50
