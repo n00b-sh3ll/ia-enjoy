@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+body.theme-light {
+  @apply bg-gray-50 text-slate-800;
+}
+
+body.theme-light .bg-slate-950 {
+  background-color: rgb(248 250 252) !important;
+}
+
+body.theme-light .bg-slate-900 {
+  background-color: rgb(255 255 255) !important;
+}
+
+body.theme-light .bg-slate-800 {
+  background-color: rgb(248 250 252) !important;
+}
+
+body.theme-light .border-slate-800,
+body.theme-light .border-slate-700,
+body.theme-light .border-slate-600 {
+  border-color: rgb(226 232 240) !important;
+}
+
+body.theme-light .text-slate-100,
+body.theme-light .text-slate-200 {
+  color: rgb(15 23 42) !important;
+}
+
+body.theme-light .text-slate-300,
+body.theme-light .text-slate-400 {
+  color: rgb(71 85 105) !important;
+}
+
+body.theme-light .hover\:bg-slate-800:hover,
+body.theme-light .hover\:bg-slate-700:hover {
+  background-color: rgb(241 245 249) !important;
+}
+
+body.theme-light .hover\:text-white:hover {
+  color: rgb(30 41 59) !important;
+}
+
+body.theme-light .placeholder-slate-400::placeholder {
+  color: rgb(148 163 184) !important;
+}
+
+.container {
+  @apply max-w-6xl mx-auto px-4;
+}
