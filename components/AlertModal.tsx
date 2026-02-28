@@ -166,11 +166,11 @@ export default function AlertModal({ alert, onClose, onSave }: AlertModalProps) 
   const ruleId = alert?.rule?.id ?? '—'
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 rounded-lg border border-slate-700 shadow-lg w-full max-w-5xl max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+      <div className="bg-slate-900 rounded-lg border border-slate-700 shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-blue-600 border-b p-8 flex justify-between items-center text-white shadow-md">
-          <h2 className="text-2xl font-bold">Detalhes do Alerta</h2>
+        <div className="sticky top-0 bg-blue-600 border-b p-4 flex justify-between items-center text-white shadow-md">
+          <h2 className="text-lg font-bold">Detalhes do Alerta</h2>
           <button
             onClick={onClose}
             className="text-white hover:text-slate-200 text-3xl font-bold"
@@ -180,54 +180,54 @@ export default function AlertModal({ alert, onClose, onSave }: AlertModalProps) 
         </div>
 
         {/* Body */}
-        <div className="p-8 space-y-8">
+        <div className="p-4 space-y-4">
           {/* Alert Details */}
-          <div className="space-y-4 bg-slate-800 p-6 rounded border border-slate-700">
+          <div className="space-y-3 bg-slate-800 p-3 rounded border border-slate-700">
             <div>
-              <span className="font-semibold text-slate-300">Descrição:</span>
-              <p className="text-slate-100 mt-2 text-base">{description}</p>
+              <span className="font-semibold text-slate-300 text-sm">Descrição:</span>
+              <p className="text-slate-100 mt-1 text-xs line-clamp-2">{description}</p>
             </div>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <span className="font-semibold text-slate-300">Agent:</span>
-                <p className="text-slate-100 mt-1">{agentName}</p>
+                <span className="font-semibold text-slate-300 text-sm">Agent:</span>
+                <p className="text-slate-100 text-sm mt-1">{agentName}</p>
               </div>
               <div>
-                <span className="font-semibold text-slate-300">IP do Agent:</span>
-                <p className="text-slate-100 mt-1">{agentIp}</p>
+                <span className="font-semibold text-slate-300 text-sm">IP:</span>
+                <p className="text-slate-100 text-sm mt-1">{agentIp}</p>
               </div>
               <div>
-                <span className="font-semibold text-slate-300">Nível de Severidade:</span>
-                <p className="text-slate-100 font-mono text-lg font-bold mt-1">{level}</p>
+                <span className="font-semibold text-slate-300 text-sm">Nível:</span>
+                <p className="text-slate-100 font-mono font-bold mt-1">{level}</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <span className="font-semibold text-slate-300">Rule ID:</span>
-                <p className="text-slate-100 font-mono mt-1">{ruleId}</p>
+                <span className="font-semibold text-slate-300 text-sm">Rule ID:</span>
+                <p className="text-slate-100 font-mono text-xs mt-1">{ruleId}</p>
               </div>
               <div>
-                <span className="font-semibold text-slate-300">Data/Hora:</span>
-                <p className="text-slate-100 mt-1">{timestamp === '—' ? timestamp : formatTimestamp(timestamp)}</p>
+                <span className="font-semibold text-slate-300 text-sm">Data/Hora:</span>
+                <p className="text-slate-100 text-xs mt-1">{timestamp === '—' ? timestamp : formatTimestamp(timestamp)}</p>
               </div>
               <div>
-                <span className="font-semibold text-slate-300">Index:</span>
+                <span className="font-semibold text-slate-300 text-sm">Index:</span>
                 <p className="text-slate-100 font-mono text-xs mt-1 break-all">{alert?.['_index'] || '—'}</p>
               </div>
             </div>
           </div>
 
           {/* Assigned User & Status */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-3">
             {/* Assigned User */}
             <div>
-              <label className="block font-semibold text-slate-300 mb-3 text-lg">
+              <label className="block font-semibold text-slate-300 mb-2 text-sm">
                 Atribuído a:
               </label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                className="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">Não atribuído</option>
                 {ASSIGNED_USERS.map((user) => (
@@ -237,21 +237,21 @@ export default function AlertModal({ alert, onClose, onSave }: AlertModalProps) 
                 ))}
               </select>
               {assignedTo && (
-                <p className="text-base text-green-400 mt-3 font-semibold">
-                  ✓ Atribuído a: {assignedTo}
+                <p className="text-xs text-green-400 mt-1 font-semibold">
+                  ✓ {assignedTo}
                 </p>
               )}
             </div>
 
             {/* Status */}
             <div>
-              <label className="block font-semibold text-slate-300 mb-3 text-lg">
-                Status do Alerta:
+              <label className="block font-semibold text-slate-300 mb-2 text-sm">
+                Status:
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                className="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               >
                 <option value="">Selecione um status</option>
                 {ALERT_STATUS.map((s) => (
@@ -261,8 +261,8 @@ export default function AlertModal({ alert, onClose, onSave }: AlertModalProps) 
                 ))}
               </select>
               {status && (
-                <p className="text-base text-blue-400 mt-3 font-semibold">
-                  ✓ Status: {status}
+                <p className="text-xs text-blue-400 mt-1 font-semibold">
+                  ✓ {status}
                 </p>
               )}
             </div>
@@ -270,67 +270,67 @@ export default function AlertModal({ alert, onClose, onSave }: AlertModalProps) 
 
           {/* Notes History */}
           <div>
-            <label className="block font-semibold text-slate-300 mb-3 text-lg">
-              Histórico de Anotações:
+            <label className="block font-semibold text-slate-300 mb-2 text-sm">
+              Anotações:
             </label>
             {noteHistory.length > 0 ? (
-              <div className="bg-slate-800 rounded p-5 mb-4 space-y-4 max-h-72 overflow-y-auto border border-slate-700">
+              <div className="bg-slate-800 rounded p-3 mb-2 space-y-2 max-h-48 overflow-y-auto border border-slate-700">
                 {noteHistory.map((note, idx) => (
-                  <div key={idx} className="bg-slate-900 p-4 rounded border-l-4 border-blue-500 border border-slate-700">
-                    <p className="text-base text-slate-100">{note?.text || '—'}</p>
-                    <p className="text-sm text-slate-400 mt-2">
-                      {note?.timestamp ? formatTimestamp(note.timestamp) : '—'} • <span className="font-semibold">{note?.author || 'anonimo'}</span>
+                  <div key={idx} className="bg-slate-900 p-2 rounded border-l-4 border-blue-500">
+                    <p className="text-xs text-slate-100">{note?.text || '—'}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {note?.timestamp ? formatTimestamp(note.timestamp) : '—'}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-base text-slate-400 italic mb-4">Nenhuma anotação ainda.</p>
+              <p className="text-xs text-slate-400 italic mb-2">Nenhuma anotação</p>
             )}
           </div>
 
-          {/* New Note Input */}
+          {/* Attachment */}
           <div>
-            <label className="block font-semibold text-slate-300 mb-3 text-lg">
+            <label className="block font-semibold text-slate-300 mb-2 text-sm">
               Anexo:
             </label>
             <input
               type="file"
               accept=".zip,.xlsx,.docx,.txt"
               onChange={handleAttachmentChange}
-              className="w-full border border-slate-700 bg-slate-900 text-slate-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 rounded px-4 py-3 text-base"
+              className="w-full border border-slate-700 bg-slate-900 text-slate-100 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 rounded px-2 py-1 text-xs"
             />
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-xs text-slate-400 mt-1">
               Formatos permitidos: .zip, .xlsx, .docx, .txt
             </p>
             {attachmentError && (
-              <p className="text-sm text-red-400 mt-2 font-semibold">Erro: {attachmentError}</p>
+              <p className="text-xs text-red-400 mt-1 font-semibold">✗ {attachmentError}</p>
             )}
             {!attachmentError && selectedAttachment && (
-              <div className="flex items-center justify-between gap-3 mt-2">
-                <p className="text-sm text-green-400 font-semibold">
-                  ✓ Anexo selecionado: {selectedAttachment.name}
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="text-xs text-green-400 font-semibold">
+                  ✓ {selectedAttachment.name}
                 </p>
                 <button
                   type="button"
                   onClick={() => handleDownloadAttachment(selectedAttachment)}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  Baixar
+                  ↓
                 </button>
               </div>
             )}
             {!attachmentError && !selectedAttachment && currentAttachment && (
-              <div className="flex items-center justify-between gap-3 mt-2">
-                <p className="text-sm text-blue-400 font-semibold">
-                  Anexo atual: {currentAttachment.name}
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="text-xs text-blue-400 font-semibold">
+                  {currentAttachment.name}
                 </p>
                 <button
                   type="button"
                   onClick={() => handleDownloadAttachment(currentAttachment)}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                  Baixar
+                  ↓
                 </button>
               </div>
             )}
@@ -338,32 +338,32 @@ export default function AlertModal({ alert, onClose, onSave }: AlertModalProps) 
 
           {/* New Note Input */}
           <div>
-            <label className="block font-semibold text-slate-300 mb-3 text-lg">
-              Adicionar Anotação:
+            <label className="block font-semibold text-slate-300 mb-2 text-sm">
+              Anotação:
             </label>
             <textarea
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Digite uma nova anotação sobre este alerta..."
-              className="w-full border border-slate-700 bg-slate-900 text-slate-100 placeholder-slate-400 rounded px-4 py-3 h-32 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+              placeholder="Digite uma anotação..."
+              className="w-full border border-slate-700 bg-slate-900 text-slate-100 placeholder-slate-400 rounded px-2 py-2 h-20 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
-            <p className="text-sm text-slate-400 mt-2">
-              Será salva com data/hora e atribuído a: <span className="font-semibold">{assignedTo || 'anonimo'}</span>
+            <p className="text-xs text-slate-400 mt-1">
+              Usuário: <span className="font-semibold">{assignedTo || 'anônimo'}</span>
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-slate-800 border-t border-slate-700 p-8 flex justify-end gap-4">
+        <div className="sticky bottom-0 bg-slate-800 border-t border-slate-700 p-3 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-6 py-3 border border-slate-600 text-slate-100 rounded hover:bg-slate-700 font-semibold text-base"
+            className="px-4 py-2 border border-slate-600 text-slate-100 rounded hover:bg-slate-700 font-semibold text-sm"
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold text-base"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold text-sm"
           >
             Salvar
           </button>
