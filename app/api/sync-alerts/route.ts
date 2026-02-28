@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { execSync } from 'child_process'
-import { syncAlertsFromES } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
@@ -16,19 +15,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'No alerts to sync', count: 0 })
     }
 
-    // Sincronizar para o banco de dados
-    const result = await syncAlertsFromES(alertsData.hits.hits)
+    // Tentar sincronizar para o banco de dados Prisma
+    try {
+      const { syncAlertsFromES } = await import('@/lib/db')
+      const result = await syncAlertsFromES(alertsData.hits.hits)
 
-    return NextResponse.json({
-      message: 'Alerts synced successfully',
-      count: result.count,
-      total: alertsData.hits?.total?.value ?? alertsData.hits?.total ?? 0,
-    })
+      return NextResponse.json({
+        message: 'Alerts synced successfully',
+        count: result.count,
+        total: alertsData.hits?.total?.value ?? alertsData.hits?.total ?? 0,
+      })
+    } catch (dbErr: any) {
+      // Se Prisma falhar, retornar resposta com aviso
+      console.warn('[API /sync-alerts] Database sync failed:', dbErr?.message)
+      return NextResponse.json(
+        {
+          message: 'Alerts fetched from Elasticsearch but database sync failed',
+          warning: dbErr?.message,
+          count: alertsData.hits.hits.length,
+          total: alertsData.hits?.total?.value ?? alertsData.hits?.total ?? 0,
+        },
+        { status: 206 } // Partial Content
+      )
+    }
   } catch (err: any) {
     console.error('[API /sync-alerts] Error:', err)
     return NextResponse.json(
       {
         error: err?.message || String(err),
+        errorDetails: String(err).substring(0, 200),
       },
       { status: 500 }
     )

@@ -137,15 +137,20 @@ export default function DashboardPage() {
         body: JSON.stringify({ limit: 500 }),
       })
       const data = await res.json()
-      if (res.ok) {
-        setSyncMessage(`✓ ${data.count} alertas sincronizados com sucesso`)
+      
+      if (res.ok || res.status === 206) {
+        // 200 = sucesso completo, 206 = sucesso parcial (alertas buscados mas DB falhou)
+        const message = res.status === 206 
+          ? `⚠️ ${data.count} alertas buscados (banco de dados indisponível)`
+          : `✓ ${data.count} alertas sincronizados com sucesso`
+        setSyncMessage(message)
         // Recarregar alertas após sincronização
         setTimeout(() => fetchPage(1), 1000)
       } else {
-        setSyncMessage(`✗ Erro na sincronização: ${data.error}`)
+        setSyncMessage(`✗ Erro: ${data.error || 'Falha desconhecida'}`)
       }
     } catch (err: any) {
-      setSyncMessage(`✗ Erro ao sincronizar: ${err?.message}`)
+      setSyncMessage(`✗ Erro ao sincronizar: ${err?.message || 'Erro de conexão'}`)
     } finally {
       setSyncing(false)
     }
@@ -287,6 +292,8 @@ export default function DashboardPage() {
             <div className={`mt-3 px-3 py-2 rounded text-sm font-medium ${
               syncMessage.startsWith('✓') 
                 ? 'bg-green-900/40 border border-green-500 text-green-200' 
+                : syncMessage.startsWith('⚠️')
+                ? 'bg-yellow-900/40 border border-yellow-500 text-yellow-200'
                 : 'bg-red-900/40 border border-red-500 text-red-200'
             }`}>
               {syncMessage}
