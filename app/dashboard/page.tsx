@@ -22,6 +22,17 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  const parseLocalDate = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+
+  const formatInputDate = (value: string) => {
+    if (!value) return '...'
+    const [year, month, day] = value.split('-')
+    return `${day}/${month}/${year}`
+  }
   const [stats, setStats] = useState({ total: 0, closed: 0, inProgress: 0, scheduled: 0, falsePositive: 0, canceled: 0, inHomologation: 0, newAlerts: 0 })
   const [syncing, setSyncing] = useState(false)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
@@ -69,18 +80,18 @@ export default function DashboardPage() {
 
       // Filtrar por período se necessário
       if (startDate || endDate) {
+        const startBoundary = startDate
+          ? new Date(parseLocalDate(startDate).setHours(0, 0, 0, 0))
+          : null
+        const endBoundary = endDate
+          ? new Date(parseLocalDate(endDate).setHours(23, 59, 59, 999))
+          : null
+
         list = list.filter(alert => {
           const alertDate = new Date(alert['@timestamp'] || alert.timestamp)
-          const start = startDate ? new Date(startDate) : null
-          const end = endDate ? new Date(endDate) : null
-          
-          if (start && alertDate < start) return false
-          if (end) {
-            // Adicionar 23:59:59 ao final do dia
-            const endOfDay = new Date(end)
-            endOfDay.setHours(23, 59, 59, 999)
-            if (alertDate > endOfDay) return false
-          }
+
+          if (startBoundary && alertDate < startBoundary) return false
+          if (endBoundary && alertDate > endBoundary) return false
           return true
         })
       }
@@ -305,7 +316,7 @@ export default function DashboardPage() {
         {(startDate || endDate) && (
           <div className="mb-4 px-4 py-2 bg-blue-900/30 border border-blue-500 rounded-md flex items-center justify-between">
             <span className="text-blue-200 text-sm">
-              📅 Filtrando por período: {startDate ? new Date(startDate).toLocaleDateString('pt-BR') : '...'} até {endDate ? new Date(endDate).toLocaleDateString('pt-BR') : '...'}
+              📅 Filtrando por período: {formatInputDate(startDate)} até {formatInputDate(endDate)}
             </span>
             <button
               onClick={() => { setStartDate(''); setEndDate('') }}

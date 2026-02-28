@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 export default function DetalhesPage() {
   const [loading, setLoading] = useState(true)
   const [chartData, setChartData] = useState<any[]>([])
+  const [agentChartData, setAgentChartData] = useState<any[]>([])
   const [totalAlerts, setTotalAlerts] = useState(0)
   const [levelFilter, setLevelFilter] = useState('')
   const [agentFilter, setAgentFilter] = useState('')
@@ -14,24 +15,55 @@ export default function DetalhesPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
+  const parseLocalDate = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+
+  const formatInputDate = (value: string) => {
+    if (!value) return '...'
+    const [year, month, day] = value.split('-')
+    return `${day}/${month}/${year}`
+  }
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
       try {
-        // Buscar um número maior de alertas para ter dados representativos
-        const params = new URLSearchParams()
-        params.set('limit', '500')
-        if (levelFilter) params.set('level', levelFilter)
-        
-        const res = await fetch(`/api/alerts?${params.toString()}`)
-        if (!res.ok) throw new Error('Falha ao buscar alertas')
-        
-        const data = await res.json()
+        // Buscar todos os alertas em lotes para evitar truncamento em 500
+        const batchSize = 500
+        // Elasticsearch geralmente limita paginação por from/size em 10k (max_result_window)
+        const maxAlerts = 10000
+        let offset = 0
         let alerts: any[] = []
-        
-        if (data.hits?.hits && Array.isArray(data.hits.hits)) {
-          alerts = data.hits.hits.map((hit: any) => hit._source)
-          setTotalAlerts(data.hits?.total?.value ?? data.hits?.total ?? 0)
+        let totalFromApi: number | null = null
+
+        while (offset < maxAlerts) {
+          const params = new URLSearchParams()
+          params.set('limit', String(batchSize))
+          params.set('offset', String(offset))
+          if (levelFilter) params.set('level', levelFilter)
+
+          const res = await fetch(`/api/alerts?${params.toString()}`)
+          if (!res.ok) {
+            // Mantém os lotes já coletados em vez de zerar tudo se algum lote falhar
+            break
+          }
+
+          const data = await res.json()
+          const hits = Array.isArray(data?.hits?.hits) ? data.hits.hits : []
+
+          if (totalFromApi === null) {
+            totalFromApi = data?.hits?.total?.value ?? data?.hits?.total ?? null
+          }
+
+          if (hits.length === 0) break
+
+          alerts = alerts.concat(hits.map((hit: any) => hit._source))
+          offset += hits.length
+
+          if (hits.length < batchSize) break
+          if (totalFromApi !== null && offset >= totalFromApi) break
         }
 
         // Extrair agentes únicos
@@ -50,21 +82,23 @@ export default function DetalhesPage() {
 
         // Filtrar por período se necessário
         if (startDate || endDate) {
+          const startBoundary = startDate
+            ? new Date(parseLocalDate(startDate).setHours(0, 0, 0, 0))
+            : null
+          const endBoundary = endDate
+            ? new Date(parseLocalDate(endDate).setHours(23, 59, 59, 999))
+            : null
+
           filteredAlerts = filteredAlerts.filter(alert => {
             const alertDate = new Date(alert['@timestamp'] || alert.timestamp)
-            const start = startDate ? new Date(startDate) : null
-            const end = endDate ? new Date(endDate) : null
-            
-            if (start && alertDate < start) return false
-            if (end) {
-              // Adicionar 23:59:59 ao final do dia
-              const endOfDay = new Date(end)
-              endOfDay.setHours(23, 59, 59, 999)
-              if (alertDate > endOfDay) return false
-            }
+
+            if (startBoundary && alertDate < startBoundary) return false
+            if (endBoundary && alertDate > endBoundary) return false
             return true
           })
         }
+
+        setTotalAlerts(filteredAlerts.length)
 
         // Contar descrições de alertas
         const descriptionCount: Record<string, number> = {}
@@ -84,7 +118,24 @@ export default function DetalhesPage() {
           .sort((a, b) => b.count - a.count)
           .slice(0, 15) // Top 15
 
+        // Contar alertas por agente
+        const agentCount: Record<string, number> = {}
+
+        filteredAlerts.forEach(alert => {
+          const agentName = alert.agent?.name || 'Agente desconhecido'
+          agentCount[agentName] = (agentCount[agentName] || 0) + 1
+        })
+
+        const sortedAgentData = Object.entries(agentCount)
+          .map(([agentName, count]) => ({
+            agentName,
+            count,
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 15) // Top 15
+
         setChartData(sortedData)
+        setAgentChartData(sortedAgentData)
       } catch (err) {
         console.error('Erro ao carregar dados:', err)
       } finally {
@@ -186,7 +237,7 @@ export default function DetalhesPage() {
                 {(agentFilter && (startDate || endDate)) && <span className="mx-1">•</span>}
                 {(startDate || endDate) && (
                   <strong>
-                    Período: {startDate ? new Date(startDate).toLocaleDateString('pt-BR') : '...'} até {endDate ? new Date(endDate).toLocaleDateString('pt-BR') : '...'}
+                    Período: {formatInputDate(startDate)} até {formatInputDate(endDate)}
                   </strong>
                 )}
               </span>
@@ -296,6 +347,64 @@ export default function DetalhesPage() {
                 <Bar dataKey="count" name="Quantidade de Alertas">
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Gráfico - Top 15 por Agente */}
+        <div className="bg-slate-900 border border-slate-700 rounded-lg p-6 mt-8">
+          <h3 className="text-xl font-semibold text-slate-100 mb-6">
+            Top 15 Agentes com Mais Alertas Gerados
+            {(levelFilter || agentFilter || startDate || endDate) && (
+              <span className="text-blue-400 text-base ml-2">
+                ({[levelFilter && `Nível ${levelFilter}`, agentFilter, (startDate || endDate) && 'Período'].filter(Boolean).join(' • ')})
+              </span>
+            )}
+          </h3>
+
+          {loading ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-slate-400">Carregando dados...</div>
+            </div>
+          ) : agentChartData.length === 0 ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-slate-400">Nenhum dado disponível</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={500}>
+              <BarChart
+                data={agentChartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="agentName"
+                  angle={-45}
+                  textAnchor="end"
+                  height={150}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                />
+                <YAxis tick={{ fill: '#94a3b8' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #475569',
+                    borderRadius: '6px',
+                    color: '#e2e8f0'
+                  }}
+                  labelStyle={{ color: '#cbd5e1' }}
+                  formatter={(value: number, name: string, props: any) => [
+                    `${value} ocorrências`,
+                    props.payload.agentName
+                  ]}
+                />
+                <Legend wrapperStyle={{ color: '#cbd5e1' }} />
+                <Bar dataKey="count" name="Quantidade por Agente">
+                  {agentChartData.map((entry, index) => (
+                    <Cell key={`agent-cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
               </BarChart>

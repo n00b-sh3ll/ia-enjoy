@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:query": "node scripts/db-query.js",
+    "db:tables": "node scripts/db-query.js --tables",
+    "db:schema": "node scripts/db-query.js --schema"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
