@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [stats, setStats] = useState({ total: 0, closed: 0, inProgress: 0, scheduled: 0, falsePositive: 0, canceled: 0, inHomologation: 0, newAlerts: 0 })
 
   const fetchPage = useCallback(async (p: number) => {
     setLoading(true)
@@ -109,10 +110,9 @@ export default function DashboardPage() {
     fetchPage(page)
   }, [page, pageSize, levelFilter, query, fetchPage])
 
-  // Calcular estatísticas dos alertas
-  const getAlertStats = () => {
+  // Calcular estatísticas apenas no cliente (evita hydration mismatch)
+  useEffect(() => {
     const alertAnnotations = readStorageJson<Record<string, any>>('alertAnnotations', {})
-
     const closed = Object.values(alertAnnotations).filter((a: any) => a.status === 'fechado').length
     const inProgress = Object.values(alertAnnotations).filter((a: any) => a.status === 'em atendimento').length
     const scheduled = Object.values(alertAnnotations).filter((a: any) => a.status === 'agendado').length
@@ -122,10 +122,8 @@ export default function DashboardPage() {
     const annotated = Object.keys(alertAnnotations).length
     const newAlerts = totalAlerts - annotated
 
-    return { total: totalAlerts, closed, inProgress, scheduled, falsePositive, canceled, inHomologation, newAlerts }
-  }
-
-  const stats = getAlertStats()
+    setStats({ total: totalAlerts, closed, inProgress, scheduled, falsePositive, canceled, inHomologation, newAlerts })
+  }, [totalAlerts])
 
   return (
     <div>
