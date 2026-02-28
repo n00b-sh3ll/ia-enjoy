@@ -1,13 +1,41 @@
-import { prisma } from './prisma'
+import { createPrismaClient } from './prisma'
+
+let prismaInstance: any = null
+
+async function getPrisma() {
+  if (!prismaInstance) {
+    prismaInstance = await createPrismaClient()
+  }
+  return prismaInstance
+}
 
 /**
  * Sincroniza alertas do Elasticsearch para o banco de dados SQLite
  */
 export async function syncAlertsFromES(alerts: any[]) {
   try {
+    const prisma = await getPrisma()
+    
     // Preparar dados para inserção/atualização
     const upsertPromises = alerts.map((alert) =>
       prisma.alert.upsert({
+
+/**
+ * Sincroniza alertas do Elasticsearch para o banco de dados SQLite
+ */
+export async function getAlertsFromDB(
+  limit: number = 50,
+  offset: number = 0,
+  filters?: {
+    level?: number
+    agentName?: string
+    startDate?: Date
+    endDate?: Date
+    search?: string
+  }
+) {
+  const prisma = await getPrisma()
+  const where: any = {}
         where: { id: alert._id },
         update: {
           timestamp: new Date(alert['@timestamp'] || alert.timestamp),
