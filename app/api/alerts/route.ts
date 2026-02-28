@@ -1,57 +1,63 @@
 import { NextResponse } from 'next/server'
 import { execSync } from 'child_process'
-import { getAlertsFromDB, getAlertStats, getLastSyncLog } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
-    const limit = parseInt(url.searchParams.get('limit') || '50')
-    const offset = parseInt(url.searchParams.get('offset') || '0')
-    const level = url.searchParams.get('level')
-    const search = url.searchParams.get('search')
-    const useDB = url.searchParams.get('useDB') !== 'false' // Usar banco de dados por padrão
+    const useDB = url.searchParams.get('useDB') === 'true'
 
     if (useDB) {
-      // Buscar do banco de dados SQLite
-      const filters: any = {}
-      if (level) filters.level = parseInt(level)
-      if (search) filters.search = search
+      // Tentar buscar do banco de dados SQLite
+      try {
+        const { getAlertsFromDB } = await import('@/lib/db')
+        const limit = parseInt(url.searchParams.get('limit') || '50')
+        const offset = parseInt(url.searchParams.get('offset') || '0')
+        const level = url.searchParams.get('level')
+        const search = url.searchParams.get('search')
 
-      const { alerts, total } = await getAlertsFromDB(limit, offset, filters)
+        const filters: any = {}
+        if (level) filters.level = parseInt(level)
+        if (search) filters.search = search
 
-      // Converter para formato compatível com ES
-      const formattedAlerts = alerts.map((alert) => ({
-        _id: alert.id,
-        _source: {
-          ...alert,
-          '@timestamp': alert.timestamp,
-          rule: {
-            level: alert.level,
-            name: alert.ruleName,
-            id: alert.ruleId,
-            description: alert.description,
+        const { alerts, total } = await getAlertsFromDB(limit, offset, filters)
+
+        // Converter para formato compatível com ES
+        const formattedAlerts = alerts.map((alert: any) => ({
+          _id: alert.id,
+          _source: {
+            ...alert,
+            '@timestamp': alert.timestamp,
+            rule: {
+              level: alert.level,
+              name: alert.ruleName,
+              id: alert.ruleId,
+              description: alert.description,
+            },
+            agent: {
+              name: alert.agentName,
+            },
+            source_ip: alert.source,
+            destination_ip: alert.destination,
           },
-          agent: {
-            name: alert.agentName,
-          },
-          source_ip: alert.source,
-          destination_ip: alert.destination,
-        },
-      }))
+        }))
 
-      return NextResponse.json({
-        hits: {
-          hits: formattedAlerts,
-          total: { value: total },
-        },
-      })
-    } else {
-      // Buscar do Elasticsearch (fallback)
-      const data = await fetchAlertsViaSSH(request)
-      return NextResponse.json(data)
+        return NextResponse.json({
+          hits: {
+            hits: formattedAlerts,
+            total: { value: total },
+          },
+        })
+      } catch (dbErr: any) {
+        console.warn('[API /alerts] DB error, falling back to ES:', dbErr?.message)
+        // Fallback para Elasticsearch se banco de dados falhar
+      }
     }
+
+    // Buscar do Elasticsearch (padrão)
+    const data = await fetchAlertsViaSSH(request)
+    return NextResponse.json(data)
   } catch (err: any) {
     console.error('[API /alerts] Error:', err)
     return NextResponse.json(
@@ -61,24 +67,6 @@ export async function GET(request: Request) {
       },
       { status: 500 }
     )
-  }
-}
-
-/**
- * GET /api/alerts/stats - Retorna estatísticas dos alertas
- */
-export async function getStats() {
-  try {
-    const stats = await getAlertStats()
-    const lastSync = await getLastSyncLog()
-    return {
-      ...stats,
-      lastSync: lastSync?.lastSync,
-      syncStatus: lastSync?.status,
-    }
-  } catch (err: any) {
-    console.error('[API /alerts/stats] Error:', err)
-    throw err
   }
 }
 
