@@ -80,11 +80,19 @@ async function fetchAlertsViaSSH(request: Request) {
 
   const sshUser = process.env.SSH_USER || 'usuario'
   const sshHost = process.env.SSH_HOST || '192.168.150.210'
-  const esUser = process.env.WAZUH_ES_USER
-  const esPassword = process.env.WAZUH_ES_PASSWORD
+  const esUser =
+    process.env.WAZUH_ES_USER ||
+    process.env.ELASTICSEARCH_USERNAME ||
+    process.env.WAZUH_USERNAME
+  const esPassword =
+    process.env.WAZUH_ES_PASSWORD ||
+    process.env.ELASTICSEARCH_PASSWORD ||
+    process.env.WAZUH_PASSWORD
 
   if (!esUser || !esPassword) {
-    throw new Error('Missing WAZUH_ES_USER or WAZUH_ES_PASSWORD environment variables')
+    throw new Error(
+      'Missing Elasticsearch credentials. Set WAZUH_ES_USER/WAZUH_ES_PASSWORD or ELASTICSEARCH_USERNAME/ELASTICSEARCH_PASSWORD'
+    )
   }
   
   // Construir filtro de level dinamicamente
