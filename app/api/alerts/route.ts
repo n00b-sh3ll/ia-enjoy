@@ -1,18 +1,84 @@
 import { NextResponse } from 'next/server'
 import { execSync } from 'child_process'
+import { getAlertsFromDB, getAlertStats, getLastSyncLog } from '@/lib/db'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
   try {
-    const data = await fetchAlertsViaSSH(request)
-    return NextResponse.json(data)
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') || '50')
+    const offset = parseInt(url.searchParams.get('offset') || '0')
+    const level = url.searchParams.get('level')
+    const search = url.searchParams.get('search')
+    const useDB = url.searchParams.get('useDB') !== 'false' // Usar banco de dados por padrão
+
+    if (useDB) {
+      // Buscar do banco de dados SQLite
+      const filters: any = {}
+      if (level) filters.level = parseInt(level)
+      if (search) filters.search = search
+
+      const { alerts, total } = await getAlertsFromDB(limit, offset, filters)
+
+      // Converter para formato compatível com ES
+      const formattedAlerts = alerts.map((alert) => ({
+        _id: alert.id,
+        _source: {
+          ...alert,
+          '@timestamp': alert.timestamp,
+          rule: {
+            level: alert.level,
+            name: alert.ruleName,
+            id: alert.ruleId,
+            description: alert.description,
+          },
+          agent: {
+            name: alert.agentName,
+          },
+          source_ip: alert.source,
+          destination_ip: alert.destination,
+        },
+      }))
+
+      return NextResponse.json({
+        hits: {
+          hits: formattedAlerts,
+          total: { value: total },
+        },
+      })
+    } else {
+      // Buscar do Elasticsearch (fallback)
+      const data = await fetchAlertsViaSSH(request)
+      return NextResponse.json(data)
+    }
   } catch (err: any) {
     console.error('[API /alerts] Error:', err)
-    return NextResponse.json({ 
-      error: err?.message || String(err),
-      errorDetails: err?.cause?.message || err?.stack?.substring(0, 200) || ''
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: err?.message || String(err),
+        errorDetails: err?.cause?.message || err?.stack?.substring(0, 200) || '',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * GET /api/alerts/stats - Retorna estatísticas dos alertas
+ */
+export async function getStats() {
+  try {
+    const stats = await getAlertStats()
+    const lastSync = await getLastSyncLog()
+    return {
+      ...stats,
+      lastSync: lastSync?.lastSync,
+      syncStatus: lastSync?.status,
+    }
+  } catch (err: any) {
+    console.error('[API /alerts/stats] Error:', err)
+    throw err
   }
 }
 

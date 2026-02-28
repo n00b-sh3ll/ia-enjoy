@@ -23,6 +23,8 @@ export default function DashboardPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [stats, setStats] = useState({ total: 0, closed: 0, inProgress: 0, scheduled: 0, falsePositive: 0, canceled: 0, inHomologation: 0, newAlerts: 0 })
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
 
   const fetchPage = useCallback(async (p: number) => {
     setLoading(true)
@@ -124,6 +126,30 @@ export default function DashboardPage() {
 
     setStats({ total: totalAlerts, closed, inProgress, scheduled, falsePositive, canceled, inHomologation, newAlerts })
   }, [totalAlerts])
+
+  const handleSyncAlerts = async () => {
+    setSyncing(true)
+    setSyncMessage(null)
+    try {
+      const res = await fetch('/api/sync-alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 500 }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSyncMessage(`✓ ${data.count} alertas sincronizados com sucesso`)
+        // Recarregar alertas após sincronização
+        setTimeout(() => fetchPage(1), 1000)
+      } else {
+        setSyncMessage(`✗ Erro na sincronização: ${data.error}`)
+      }
+    } catch (err: any) {
+      setSyncMessage(`✗ Erro ao sincronizar: ${err?.message}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   return (
     <div>
@@ -237,6 +263,35 @@ export default function DashboardPage() {
             <div className="text-3xl font-bold text-purple-100 mt-2">{stats.inHomologation}</div>
             <div className="text-xs text-purple-400 mt-1">em teste</div>
           </div>
+        </div>
+
+        {/* Sincronização de Alertas */}
+        <div className="mb-6 bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div>
+                <h3 className="font-semibold text-slate-100">Sincronizar Alertas</h3>
+                <p className="text-xs text-slate-400 mt-1">Importar alertas do Elasticsearch para o banco de dados SQLite</p>
+              </div>
+            </div>
+            <button
+              onClick={handleSyncAlerts}
+              disabled={syncing || loading}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-all flex items-center gap-2"
+            >
+              {syncing && <span className="inline-block animate-spin">⟳</span>}
+              {syncing ? 'Sincronizando...' : 'Sincronizar Alertas'}
+            </button>
+          </div>
+          {syncMessage && (
+            <div className={`mt-3 px-3 py-2 rounded text-sm font-medium ${
+              syncMessage.startsWith('✓') 
+                ? 'bg-green-900/40 border border-green-500 text-green-200' 
+                : 'bg-red-900/40 border border-red-500 text-red-200'
+            }`}>
+              {syncMessage}
+            </div>
+          )}
         </div>
 
         {/* Indicador de filtro por período */}

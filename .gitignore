@@ -1,3 +1,8 @@
 .env.local
+.env
 node_modules/
 .next/
+generated/prisma
+/dev.db
+/dev.db-journal
+prisma/migrations/
