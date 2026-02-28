@@ -1,12 +1,7 @@
-import { createPrismaClient } from './prisma'
-
-let prismaInstance: any = null
+import { getPrismaClient } from './prisma'
 
 async function getPrisma() {
-  if (!prismaInstance) {
-    prismaInstance = await createPrismaClient()
-  }
-  return prismaInstance
+  return await getPrismaClient()
 }
 
 /**
@@ -15,27 +10,10 @@ async function getPrisma() {
 export async function syncAlertsFromES(alerts: any[]) {
   try {
     const prisma = await getPrisma()
-    
+
     // Preparar dados para inserção/atualização
     const upsertPromises = alerts.map((alert) =>
       prisma.alert.upsert({
-
-/**
- * Sincroniza alertas do Elasticsearch para o banco de dados SQLite
- */
-export async function getAlertsFromDB(
-  limit: number = 50,
-  offset: number = 0,
-  filters?: {
-    level?: number
-    agentName?: string
-    startDate?: Date
-    endDate?: Date
-    search?: string
-  }
-) {
-  const prisma = await getPrisma()
-  const where: any = {}
         where: { id: alert._id },
         update: {
           timestamp: new Date(alert['@timestamp'] || alert.timestamp),
@@ -77,13 +55,18 @@ export async function getAlertsFromDB(
     console.error('[DB Sync Error]', error)
 
     // Registrar erro de sincronização
-    await prisma.syncLog.create({
-      data: {
-        alertsCount: 0,
-        status: 'error',
-        error: error?.message || 'Unknown error',
-      },
-    })
+    const prisma = await getPrisma()
+    try {
+      await prisma.syncLog.create({
+        data: {
+          alertsCount: 0,
+          status: 'error',
+          error: error?.message || 'Unknown error',
+        },
+      })
+    } catch (e) {
+      console.error('[DB Sync Log Error]', e)
+    }
 
     throw error
   }
@@ -103,6 +86,7 @@ export async function getAlertsFromDB(
     search?: string
   }
 ) {
+  const prisma = await getPrisma()
   const where: any = {}
 
   if (filters?.level !== undefined) {
@@ -157,6 +141,8 @@ export async function getAlertsFromDB(
  * Obtém estatísticas de alertas
  */
 export async function getAlertStats() {
+  const prisma = await getPrisma()
+
   const [total, closed, inProgress, scheduled, falsePositive, canceled, inHomologation] = await Promise.all([
     prisma.alert.count(),
     prisma.alert.count({
@@ -226,6 +212,8 @@ export async function updateAlertAnnotation(
   notes?: string,
   assignedTo?: string
 ) {
+  const prisma = await getPrisma()
+
   return prisma.alertAnnotation.upsert({
     where: { alertId },
     update: {
@@ -253,6 +241,8 @@ export async function addAttachment(
   fileSize: number,
   fileData: string
 ) {
+  const prisma = await getPrisma()
+
   const annotation = await prisma.alertAnnotation.upsert({
     where: { alertId },
     update: {},
@@ -271,18 +261,22 @@ export async function addAttachment(
 }
 
 /**
- * Deleta anexo
+ * Remove anexo de um alerta
  */
 export async function deleteAttachment(attachmentId: string) {
+  const prisma = await getPrisma()
+
   return prisma.attachment.delete({
     where: { id: attachmentId },
   })
 }
 
 /**
- * Busca última sincronização
+ * Obtém último registro de sincronização
  */
 export async function getLastSyncLog() {
+  const prisma = await getPrisma()
+
   return prisma.syncLog.findFirst({
     orderBy: { lastSync: 'desc' },
   })
